@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="3.1">
+    <servlet>
+        <servlet-name>CurveServlet</servlet-name>
+        <servlet-class>CurveServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CurveServlet</servlet-name>
+        <url-pattern>/CurveServlet</url-pattern>
+    </servlet-mapping>
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+</web-app>
