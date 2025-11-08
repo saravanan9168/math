@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧮 SS AI Lab's Mathematical Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4682B4 0%, #1E3A5F 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls h2 {
+            color: #4682B4;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4682B4;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4682B4 0%, #1E3A5F 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(70, 130, 180, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            color: #155724;
+            font-weight: bold;
+            font-size: 1.1em;
+            display: none;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .display {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .display h2 {
+            color: #4682B4;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            position: relative;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .placeholder {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #4682B4;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box p {
+            color: #0066cc;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧮 SS AI Lab's Mathematical Assistant</h1>
+            <p>Fibonacci Curve Generator & Calculator</p>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <h2>✅ Controls</h2>
+                
+                <div class="form-group">
+                    <label for="operation">Choose the operation:</label>
+                    <select id="operation" onchange="updateInputFields()">
+                        <option value="addition">Addition</option>
+                        <option value="subtraction">Subtraction</option>
+                        <option value="multiplication">Multiplication</option>
+                        <option value="division">Division</option>
+                        <option value="fibonacci">Fibonacci Curve</option>
+                    </select>
+                </div>
+
+                <div id="input-fields"></div>
+
+                <button onclick="calculate()">Calculate</button>
+
+                <div id="result" class="result"></div>
+
+                <div class="info-box">
+                    <p><strong>Note:</strong> Each Fibonacci number creates one independent arc (quadrant) of the curve. The curves are not connected, showing individual spiral segments.</p>
+                </div>
+            </div>
+
+            <div class="display">
+                <h2>Output Visualization</h2>
+                <div id="canvas-container">
+                    <canvas id="plotCanvas"></canvas>
+                    <div id="placeholder" class="placeholder">
+                        Fibonacci Curve will appear here
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize
+        updateInputFields();
+
+        function updateInputFields() {
+            const operation = document.getElementById('operation').value;
+            const inputFields = document.getElementById('input-fields');
+            
+            if (operation === 'fibonacci') {
+                inputFields.innerHTML = `
+                    <div class="form-group">
+                        <label for="n-value">Enter the number of terms (N):</label>
+                        <input type="number" id="n-value" value="10" min="1" max="20" step="1">
+                    </div>
+                `;
+            } else {
+                inputFields.innerHTML = `
+                    <div class="form-group">
+                        <label for="num1">Enter the Value of A:</label>
+                        <input type="number" id="num1" value="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="num2">Enter the Value of B:</label>
+                        <input type="number" id="num2" value="0" step="0.01">
+                    </div>
+                `;
+            }
+            
+            // Clear previous results and plot
+            document.getElementById('result').style.display = 'none';
+            clearCanvas();
+        }
+
+        function calculate() {
+            const operation = document.getElementById('operation').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (operation === 'fibonacci') {
+                const n = parseInt(document.getElementById('n-value').value);
+                
+                if (n < 1 || n > 20) {
+                    showResult('N must be between 1 and 20', true);
+                    return;
+                }
+                
+                const segments = generateFibonacciCurve(n);
+                const totalLength = calculateTotalLength(segments);
+                
+                plotIndividualCurves(segments);
+                showResult(`Fibonacci Curve Length: ${totalLength.toFixed(2)} units`, false);
+                
+            } else {
+                const num1 = parseFloat(document.getElementById('num1').value);
+                const num2 = parseFloat(document.getElementById('num2').value);
+                let result;
+                
+                switch (operation) {
+                    case 'addition':
+                        result = num1 + num2;
+                        break;
+                    case 'subtraction':
+                        result = num1 - num2;
+                        break;
+                    case 'multiplication':
+                        result = num1 * num2;
+                        break;
+                    case 'division':
+                        if (num2 === 0) {
+                            showResult('❌ Cannot divide by zero', true);
+                            return;
+                        }
+                        result = num1 / num2;
+                        break;
+                }
+                
+                showResult(`Result: ${result.toFixed(2)}`, false);
+                clearCanvas();
+            }
+        }
+
+        function showResult(message, isError) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = 'result ' + (isError ? 'error' : '');
+            resultDiv.style.display = 'block';
+        }
+
+        function generateFibonacciCurve(N) {
+            // Generate Fibonacci numbers
+            const F = [0, 1];
+            for (let i = 0; i < N; i++) {
+                F.push(F[F.length - 1] + F[F.length - 2]);
+            }
+            
+            // Calculate centroids
+            const I = [[0, 0], [0, 0], [0, 0]];
+            for (let j = 3; j < N; j++) {
+                const pivot = (j - 2) % 4;
+                let X_flag = false, Sign_Flag = false;
+                
+                if (pivot === 1) {
+                    X_flag = true;
+                    Sign_Flag = true;
+                } else if (pivot === 2) {
+                    X_flag = false;
+                    Sign_Flag = true;
+                } else if (pivot === 3) {
+                    X_flag = true;
+                    Sign_Flag = false;
+                } else if (pivot === 0) {
+                    X_flag = false;
+                    Sign_Flag = false;
+                }
+                
+                let x_temp = I[j - 1][0];
+                let y_temp = I[j - 1][1];
+                
+                if (Sign_Flag && X_flag) {
+                    x_temp += F[j - 2];
+                } else if (Sign_Flag && !X_flag) {
+                    y_temp += F[j - 2];
+                } else if (!Sign_Flag && X_flag) {
+                    x_temp -= F[j - 2];
+                } else if (!Sign_Flag && !X_flag) {
+                    y_temp -= F[j - 2];
+                }
+                
+                I.push([x_temp, y_temp]);
+            }
+            
+            // Remove first element
+            F.shift();
+            I.shift();
+            
+            // Generate individual curve segments
+            const segments = [];
+            const Angle = [[1, 91], [91, 181], [181, 271], [271, 361]];
+            
+            for (let i = 0; i < I.length; i++) {
+                const segmentX = [];
+                const segmentY = [];
+                
+                const pivot_a = i % 4;
+                const AnR = Angle[pivot_a];
+                const r = F[i];
+                
+                const x_align = I[i][0];
+                const y_align = I[i][1];
+                
+                for (let j = AnR[0]; j < AnR[1]; j++) {
+                    const x_temp = r * Math.cos(j * Math.PI / 180);
+                    const y_temp = r * Math.sin(j * Math.PI / 180);
+                    
+                    segmentX.push(x_temp + x_align);
+                    segmentY.push(y_temp + y_align);
+                }
+                
+                segments.push({ X: segmentX, Y: segmentY, radius: r, index: i });
+            }
+            
+            return segments;
+        }
+
+        function calculateTotalLength(segments) {
+            let totalLength = 0;
+            for (const segment of segments) {
+                totalLength += Math.PI * (segment.radius / 2.0);
+            }
+            return totalLength;
+        }
+
+        function plotIndividualCurves(segments) {
+            const canvas = document.getElementById('plotCanvas');
+            const container = document.getElementById('canvas-container');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = container.clientWidth - 40;
+            canvas.height = container.clientHeight - 40;
+            
+            // Hide placeholder
+            document.getElementById('placeholder').style.display = 'none';
+            canvas.style.display = 'block';
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Find bounds
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            
+            for (const segment of segments) {
+                for (const x of segment.X) {
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x);
+                }
+                for (const y of segment.Y) {
+                    minY = Math.min(minY, y);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+            
+            // Add padding
+            const rangeX = maxX - minX;
+            const rangeY = maxY - minY;
+            const padding = 0.1;
+            minX -= rangeX * padding;
+            maxX += rangeX * padding;
+            minY -= rangeY * padding;
+            maxY += rangeY * padding;
+            
+            // Calculate scale
+            const plotWidth = canvas.width - 60;
+            const plotHeight = canvas.height - 60;
+            
+            const scaleX = plotWidth / (maxX - minX);
+            const scaleY = plotHeight / (maxY - minY);
+            const scale = Math.min(scaleX, scaleY);
+            
+            const offsetX = 30;
+            const offsetY = 30;
+            
+            // Draw grid
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = offsetX + (i * plotWidth / 10);
+                const y = offsetY + (i * plotHeight / 10);
+                
+                ctx.beginPath();
+                ctx.moveTo(x, offsetY);
+                ctx.lineTo(x, offsetY + plotHeight);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(offsetX, y);
+                ctx.lineTo(offsetX + plotWidth, y);
+                ctx.stroke();
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            const zeroX = offsetX + ((-minX) * scale);
+            const zeroY = offsetY + plotHeight - ((-minY) * scale);
+            
+            ctx.beginPath();
+            ctx.moveTo(offsetX, zeroY);
+            ctx.lineTo(offsetX + plotWidth, zeroY);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(zeroX, offsetY);
+            ctx.lineTo(zeroX, offsetY + plotHeight);
+            ctx.stroke();
+            
+            // Define colors for each segment
+            const colors = [
+                '#000080', // Navy
+                '#DC143C', // Crimson
+                '#008000', // Green
+                '#FF8C00', // Dark Orange
+                '#8A2BE2', // Blue Violet
+                '#FF1493', // Deep Pink
+                '#00BFFF', // Deep Sky Blue
+                '#FFD700'  // Gold
+            ];
+            
+            // Draw each curve segment individually
+            ctx.lineWidth = 2.5;
+            
+            for (let idx = 0; idx < segments.length; idx++) {
+                const segment = segments[idx];
+                ctx.strokeStyle = colors[idx % colors.length];
+                
+                ctx.beginPath();
+                for (let i = 0; i < segment.X.length; i++) {
+                    const x = offsetX + ((segment.X[i] - minX) * scale);
+                    const y = offsetY + plotHeight - ((segment.Y[i] - minY) * scale);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            // Draw title
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fibonacci Curve (Individual Quadrants)', canvas.width / 2, 20);
+            
+            // Draw axis labels
+            ctx.font = '12px Arial';
+            ctx.fillText('X-axis (one unit)', canvas.width - 80, canvas.height - 5);
+            
+            ctx.save();
+            ctx.translate(10, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Y-axis (one unit)', 0, 0);
+            ctx.restore();
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('plotCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'none';
+            document.getElementById('placeholder').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
