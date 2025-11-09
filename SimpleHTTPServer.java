@@ -51,6 +51,27 @@ public class SimpleHTTPServer {
     }
     
     static class FileHandler implements HttpHandler {
+        
+        // Helper class to hold SVG and total length
+        static class CurveData {
+            String svg;
+            double totalLength;
+            
+            CurveData(String svg, double totalLength) {
+                this.svg = svg;
+                this.totalLength = totalLength;
+            }
+        }
+        
+        // Helper method to escape JSON strings
+        private String jsonEscape(String s) {
+            return "\"" + s.replace("\\", "\\\\")
+                           .replace("\"", "\\\"")
+                           .replace("\n", "\\n")
+                           .replace("\r", "\\r")
+                           .replace("\t", "\\t") + "\"";
+        }
+        
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String requestPath = exchange.getRequestURI().getPath();
@@ -163,24 +184,28 @@ public class SimpleHTTPServer {
                 // Generate SVG directly without saving to file
                 System.out.println("🔄 Generating curve for N=" + n + "...");
                 
-                String svg = generateSVGDirectly(n);
+                CurveData curveData = generateSVGDirectly(n);
                 
-                if (svg == null) {
+                if (curveData == null) {
                     sendResponse(exchange, 500, "Failed to generate curve".getBytes());
                     logRequest(exchange.getRequestMethod(), "/generate?n=" + n, 500);
                     return;
                 }
                 
-                byte[] svgBytes = svg.getBytes("UTF-8");
-                exchange.getResponseHeaders().set("Content-Type", "image/svg+xml; charset=utf-8");
+                // Return JSON with SVG and length
+                String json = String.format("{\"svg\":%s,\"totalLength\":%.2f}", 
+                    jsonEscape(curveData.svg), curveData.totalLength);
+                
+                byte[] jsonBytes = json.getBytes("UTF-8");
+                exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
                 exchange.getResponseHeaders().set("Cache-Control", "no-cache");
-                exchange.sendResponseHeaders(200, svgBytes.length);
+                exchange.sendResponseHeaders(200, jsonBytes.length);
                 
                 OutputStream os = exchange.getResponseBody();
-                os.write(svgBytes);
+                os.write(jsonBytes);
                 os.close();
                 
-                System.out.println("✓ Generated and sent curve for N=" + n);
+                System.out.println("✓ Generated and sent curve for N=" + n + " (Length: " + String.format("%.2f", curveData.totalLength) + " units)");
                 logRequest(exchange.getRequestMethod(), "/generate?n=" + n, 200);
                 
             } catch (NumberFormatException e) {
@@ -193,20 +218,46 @@ public class SimpleHTTPServer {
             }
         }
         
-        private String generateSVGDirectly(int N) {
+        private CurveData generateSVGDirectly(int N) {
             try {
                 // Use FibonacciCalculator to get curve segments
+                @SuppressWarnings("unchecked")
                 java.util.List<Object> segments = (java.util.List<Object>) Class.forName("FibonacciCalculator")
                     .getMethod("calculateIndividualCurves", int.class)
                     .invoke(null, N);
                 
+                // Calculate total length
+                double totalLength = calculateTotalLength(segments);
+                
                 // Build SVG dynamically
-                return buildSVG(segments, N);
+                String svg = buildSVG(segments, N);
+                
+                return new CurveData(svg, totalLength);
                 
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
+        }
+        
+        private double calculateTotalLength(java.util.List<Object> segments) throws Exception {
+            double totalLength = 0.0;
+            
+            for (Object segObj : segments) {
+                @SuppressWarnings("unchecked")
+                java.util.List<Double> X = (java.util.List<Double>) segObj.getClass().getField("X").get(segObj);
+                @SuppressWarnings("unchecked")
+                java.util.List<Double> Y = (java.util.List<Double>) segObj.getClass().getField("Y").get(segObj);
+                
+                // Calculate length of this curve segment
+                for (int i = 0; i < X.size() - 1; i++) {
+                    double dx = X.get(i + 1) - X.get(i);
+                    double dy = Y.get(i + 1) - Y.get(i);
+                    totalLength += Math.sqrt(dx * dx + dy * dy);
+                }
+            }
+            
+            return totalLength;
         }
         
         private String buildSVG(java.util.List<Object> segments, int N) throws Exception {
@@ -219,7 +270,9 @@ public class SimpleHTTPServer {
             double minY = Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
             
             for (Object segObj : segments) {
+                @SuppressWarnings("unchecked")
                 java.util.List<Double> X = (java.util.List<Double>) segObj.getClass().getField("X").get(segObj);
+                @SuppressWarnings("unchecked")
                 java.util.List<Double> Y = (java.util.List<Double>) segObj.getClass().getField("Y").get(segObj);
                 
                 for (double x : X) {
@@ -290,9 +343,22 @@ public class SimpleHTTPServer {
             // Draw curves
             svg.append("<!-- Curves -->\n");
             int idx = 0;
+            java.util.List<Double> curveLengths = new java.util.ArrayList<>();
+            
             for (Object segObj : segments) {
+                @SuppressWarnings("unchecked")
                 java.util.List<Double> X = (java.util.List<Double>) segObj.getClass().getField("X").get(segObj);
+                @SuppressWarnings("unchecked")
                 java.util.List<Double> Y = (java.util.List<Double>) segObj.getClass().getField("Y").get(segObj);
+                
+                // Calculate curve length
+                double curveLength = 0.0;
+                for (int i = 0; i < X.size() - 1; i++) {
+                    double dx = X.get(i + 1) - X.get(i);
+                    double dy = Y.get(i + 1) - Y.get(i);
+                    curveLength += Math.sqrt(dx * dx + dy * dy);
+                }
+                curveLengths.add(curveLength);
                 
                 svg.append("<polyline points=\"");
                 for (int i = 0; i < X.size(); i++) {
@@ -310,6 +376,27 @@ public class SimpleHTTPServer {
             svg.append("<text x=\"").append(WIDTH / 2).append("\" y=\"25\" font-size=\"18\" ")
                .append("font-weight=\"bold\" text-anchor=\"middle\">Fibonacci Curve (N=")
                .append(N).append(")</text>\n");
+            
+            // Display curve lengths
+            svg.append("<!-- Curve Lengths -->\n");
+            svg.append("<text x=\"10\" y=\"50\" font-size=\"14\" ")
+               .append("font-weight=\"bold\" fill=\"#333\">Curve Lengths:</text>\n");
+            
+            int yPos = 70;
+            for (int i = 0; i < curveLengths.size(); i++) {
+                svg.append("<text x=\"10\" y=\"").append(yPos).append("\" font-size=\"12\" ")
+                   .append("fill=\"").append(colors[i % colors.length]).append("\" font-family=\"Arial\">")
+                   .append("Curve ").append(i + 1).append(": ")
+                   .append(String.format("%.2f", curveLengths.get(i)))
+                   .append(" units</text>\n");
+                yPos += 18;
+                
+                // If too many curves, split into columns
+                if (yPos > HEIGHT - 100 && i < curveLengths.size() - 1) {
+                    yPos = 70;
+                    // Move to next column (would need additional logic)
+                }
+            }
             
             svg.append("</svg>\n");
             

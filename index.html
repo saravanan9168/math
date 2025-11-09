@@ -50,6 +50,7 @@ code{background:#f5f5f5;padding:2px 6px;border-radius:3px;font-family:monospace}
 </select>
 </div>
 <div id='inputs'></div>
+<div id='curve-length' style='display:none;margin:15px 0;padding:12px;background:#e7f3ff;border-left:4px solid #4682B4;border-radius:5px;font-weight:bold;color:#0066cc;font-size:1.1em;text-align:center'></div>
 <button onclick='calc()'>Calculate</button>
 <div id='result' class='result'></div>
 </div>
@@ -105,17 +106,25 @@ d.style.display='block';
 function loadPlot(n){
 const c=document.getElementById('output-container');
 const p=document.getElementById('placeholder');
+const lengthDiv=document.getElementById('curve-length');
 if(p)p.style.display='none';
+lengthDiv.style.display='none';
 showRes('Generating curve for N='+n+'...',0);
 fetch('/generate?n='+n,{cache:'no-store'})
-.then(r=>{if(!r.ok)throw new Error('Generation failed');return r.text();})
-.then(t=>{c.innerHTML=t;showRes('✓ Curve generated for N='+n,0);})
+.then(r=>{if(!r.ok)throw new Error('Generation failed');return r.json();})
+.then(data=>{
+c.innerHTML=data.svg;
+lengthDiv.textContent='Total Fibonacci Curve Length: '+data.totalLength.toFixed(2)+' units';
+lengthDiv.style.display='block';
+showRes('✓ Curve generated for N='+n,0);
+})
 .catch(e=>{showRes('Error: '+e.message+'. Make sure Java files are compiled.',1);if(p)p.style.display='block';});
 }
 function clear(){
 const c=document.getElementById('output-container');
-const p=document.getElementById('placeholder');
+const lengthDiv=document.getElementById('curve-length');
 c.innerHTML='<div id="placeholder" class="placeholder">Select operation and Calculate<br><strong>Fibonacci:</strong> Loads Java-generated PNG/SVG</div>';
+lengthDiv.style.display='none';
 }
 </script>
 </body>
